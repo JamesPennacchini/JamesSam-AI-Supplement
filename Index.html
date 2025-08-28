@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allard AI Supplement</title>
+    <link href="./styles.css" rel="stylesheet" id="style-link">
+    <style>
+        body {
+            background-image: url('./background.jpg'); /* Local image file */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: rgba(255, 255, 255, 0.8); /* White overlay for readability */
+        }
+        .custom-blue {
+            color: #0081C6;
+        }
+        .custom-blue-bg {
+            background-color: #0081C6;
+        }
+        .custom-blue-bg:hover {
+            background-color: #006BA6;
+        }
+        .custom-red {
+            color: #E31D25;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-8">
+    <div class="w-full max-w-3xl bg-blue-50 rounded-xl shadow-md p-6">
+        <div class="flex justify-center mb-6">
+            <img src="logo.png" alt="Allard AI Logo" class="h-16">
+        </div>
+        <h1 class="text-4xl font-bold custom-blue mb-6 text-center">Allard AI Supplement</h1>
+        <p class="text-gray-800 mb-6 text-center">Select a prompt type to customize:</p>
+        
+        <div id="prompt-buttons" class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <!-- Buttons will be added by JavaScript -->
+        </div>
+
+        <div id="input-modal" class="modal">
+            <div class="modal-content" style="max-height: 70vh; overflow-y: auto; border-color: #0081C6;">
+                <h2 id="modal-title" class="text-2xl font-semibold custom-blue mb-4">Enter details</h2>
+                <form id="input-form" class="space-y-6">
+                    <!-- Input fields will be added dynamically -->
+                    <!-- Buttons will be added dynamically -->
+                </form>
+            </div>
+        </div>
+
+        <div class="w-full mt-8">
+            <label for="result" class="block text-lg font-medium custom-red">Generated Prompt:</label>
+            <textarea id="result" class="w-full h-48 p-4 mt-2 border border-blue-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" readonly></textarea>
+            <button onclick="copyToClipboard()" class="mt-4 custom-blue-bg text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        const PROMPT_TEMPLATES = {
+            "Company Primer": {
+                template: `Instruction: produce a comprehensive primer for [Company Name]. When reviewing company or broker reports, treat numerical data as factual and commentary as opinion. The primer is to be used as an objective internal document, only use commentary if it is directly supported by data, to avoid bias, promotional language, or unverified claims. If possible, use data from after 2020 to support your analysis.
+Structure the report strictly under the following sections: 1) Overview 2) Business segments and management 3) Competitive advantage 4) financials and outlook 5) recent trends 6) risks.
+Use the following guidelines for each section.
+Section 1: Overview
+Company overview, history and background: Founding, evolution, and key milestones.
+Assess the company’s positioning in the industry value chain: Role, upstream/downstream relationships. Highlight the company’s market share in its industry.
+Provide a financial summary including the following data points: market capitalisation in USD, latest financial year revenues, latest financial year operating profits, latest financial year net profit.
+Provide an overview of the historical 5 year revenue CAGR with an explanation for the historical growth drivers/headwinds.
+Provide an overview of the last 5 years gross and operating margins with an explanation for the historical margin drivers and headwinds.
+Do not skip any of the last 5 years.
+Section 2: Business Segments and Management
+Business segments: List each business segment. For each segment, provide: Percentage contribution to total revenues. Clear explanation of what the segment does. How the segment generates revenue and profits. This should give the reader a detailed understanding of the company’s core activities and revenue streams.
+List the geographical breakdown of revenues and profits for the business. Highlight long term trends and crucial geographies for the company.
+Provide and overview of the Management team, strategy and execution record. Comment on strategy, consistency, and delivery or failure to deliver on guidance and stated goals.
+Section 3: Competitive Advantage
+Assess the presence or lack of competitive advantage for the company. Comment on its nature, strength, durability and how it manifests in the company’s economics and competitive positioning relative to peers. If the company’s competitive advantage is low and or replicable, be objective and state so.
+Highlight the company’s market share in its key segments historically and currently as well as whether market share is expected to improve, worsen or stay steady going forward and why.
+Section 4: Financials and outlook
+• Provide the Capital allocation track record of the company over the both the long term and nearer term: M&A, capital management, and return on equity (ROE).
+• Assess the Balance sheet robustness: net cash or net debt positioning, liquidity, and financial ability to meet capex and capital management requirements.
+• Comment on the Quality and predictability of earnings and financial track record. Revenue growth, historical and projected operating margin profile, sustainability of earnings, cashflow conversion.
+• Forward-looking statements: Focus on mid-to-long-term (5-10 years) outlook for revenues, margins and ROE, not short-term forecasts. Provide explanations for these outlooks.
+Section 5: Recent trends
+• Highlight recent industry and company trends, both positive and negative. The focus should be on key positives and negatives from the last one or two years and impacting the next on or two years. This should give the reader a feel for how the market is thinking about the company.
+Section 6: Risks
+• Risks overview: identify and analyse key risks to [Company Name]. Industry risks such as regulatory change or cyclicality or commoditisation, external risks such as demographics or geopolitics or macroeconomics, technological risks such as bypass risk or disruption, competitive risks such as new entrants or pricing pressure, company specific risks such as key man risk or loss of competitive advantage or financial vulnerability.`,
+                fields: ["Company Name"]
+            },
+            "Industry Primer": {
+                template: `INDUSTRY: [Industry]
+Task: Produce a comprehensive industry primer on the [Industry] industry. When reviewing company or broker reports, treat numerical data as factual and commentary as opinion. The primer is to be used as an objective internal document, only use commentary if it is directly supported by data, avoid bias, promotional language, or unverified claims.
+Structure the report under 2 clear sections as below: 1) industry overview 2) industry assessment score. Section 1 should read like a factual report and may include tables to present data where it would help with readability. Section 2 should only include a three column table. Financial metrics should be segmented by sub-sector.
+First Section: Industry Overview
+For the [Industry] industry, assess and provide each of the following:
+• Industry overview and history: Key milestones and evolution within the last 10 years, make it detailed.
+• Historical industry growth: Quantitative and qualitative drivers.
+• Stage of industry lifecycle: Emerging, growth, mature, or declining.
+(Provide the industry lifecycle stage and explain implications for growth versus predictability.)
+• Value chain overview: identify key value chain segments, comment on economic characteristics and prospects of each segment as to commoditisation, capital intensity, growth and profitability.
+• Industry growth outlook and drivers: identify Mid-to-long-term (5-10 years) growth prospects and drivers.
+• Industry profitability: assess historical and forward looking profitability of the industry, refer to industry gross and operating margins as well as ROE. Comment on the main drivers.
+• Commoditization: assess the degree to which this industry shows characteristics of being commoditised.
+• Capital intensity: Comment on the capital intensity of the industry historically and comment on recent trends.
+• Regulatory and external risks: if applicable, highlight major historical, present and future possible regulatory challenges and external risks.
+• Competitive landscape and intensity: list the main players and their market share in a table. Describe the industry competitive structure. Comment on barriers to entry and the nature and intensity of the competition. Comment on the level of fragmentation and consolidation and trends.
+• Future proofness: address the industry’s resilience to disruption, technological change, and secular trends.
+• Recent trends: Highlight recent industry trends, both positive and negative. The focus should be on key positives and negatives from the last one or two years and impacting the next on or two years. This should give the reader a feel for how the market is thinking about the industry.
+Measure historical demand variability (e.g., revenue or order-backlog volatility) and discuss predictability.
+Evaluate capital intensity across key value-chain segments and its impact on returns.
+Analyse the degree of commoditisation in core products or services and its effect on pricing power.
+Assess regulatory and external risks, including potential price controls or political intervention.
+Identify secular growth tailwinds and compare industry growth rates to nominal GDP.
+Summarise the competitive intensity by discussing rivalry, barriers to entry, and market-share stability.
+Second Section: Industry Assessment Score
+Instructions: Produce a 3-column table with the following headings: factor, score, evidence. Score each of the below factors (secular growth, predictability, regulatory and external risks, Competitive intensity, future proofness) on a 1 to 5 scale based strictly on factual evidence, avoiding opinions or flowery commentary.
+ONLY PRODUCE 1 TABLE
+Use the below guidelines to inform the scoring.
+A. Secular Growth
+Definition: Presence of long-term, structural growth drivers and tailwinds that support industry expansion beyond cyclical fluctuations.
+Key considerations:
+• Compare industry growth rates to nominal GDP benchmarks:
+• Below nominal GDP growth with low probability of catching up = Score 1
+• Below nominal GDP but with positive directional trend = Score 2
+• Around nominal GDP but with negative trend = Score 2
+• At or slightly above nominal GDP with positive secular growth = Score 3-4
+• Significantly above nominal GDP growth (2x or more) = Score 5
+• Identify secular tailwinds such as demographic shifts, penetration levels, urbanization, technology adoption, or regulatory support.
+• Assess penetration rate: Is the market underdeveloped (high growth potential) or saturated?
+B. Predictability
+Definition: Stability and consistency of industry demand over time.
+Key considerations:
+• Is demand cyclical or secular?
+• Measure variability in demand patterns historically (e.g., revenue volatility, order backlog fluctuations).
+• Determine the industry lifecycle stage: early-stage industries tend to have more growth but less predictability, mature industries tend to be more stable but slower growing.
+• Score accordingly: highly stable and predictable = 5; highly volatile, cyclical and unpredictable = 1.
+C. Regulatory and External Risks
+Definition: Exposure to regulatory intervention, political risk, and environmental/social risks.
+Key considerations:
+• Evaluate historical and potential regulatory actions affecting pricing, operations, or market access.
+• Assess the likelihood of political intervention or price controls.
+• Determine exposure to environmental regulations or social responsibility pressures.
+• Score low risk as 5, high risk as 1.
+D. Competitive Intensity
+Definition: Degree of competition within the industry and its impact on profitability and market dynamics.
+Key considerations:
+• Analyse industry structure: fragmented vs. concentrated markets.
+• Assess barriers to entry and threat of new entrants.
+• Evaluate intensity of rivalry among existing players (price wars, innovation races, marketing battles).
+• Consider historical evidence of competitive behaviour and market share stability.
+• Score low intensity (high moats, stable market shares) = 5; high intensity (cutthroat competition, low barriers) = 1.
+E. Future Proof
+Definition: Industry’s resilience to technological disruption, bypass risk, and availability of realistic substitutes or alternatives.
+Key considerations:
+• Identify current and emerging factors including technologies that could disrupt the industry’s business model.
+• Assess the risk of customers and or competitors bypassing traditional industry players.
+• Evaluate whether incumbent players possess the skills, resources, and positioning to adapt to technological changes.
+• Score industries well-positioned for the future as 5; industries at high risk of disruption as 1.`,
+                fields: ["Industry"]
+            },
+            "Value Chain Analysis": {
+                template: `Create a value chain analysis of [Industry] in [Country], highlight which companies lie on each end of the value chain. Also tell me which parts of the value chain account for which percentage of average [Industry] costs. For each section of the value chain, tell me the percentage of consumer cost, the level of replaceability, competition, margins as well as ROE.`,
+                fields: ["Industry", "Country"]
+            },
+            "Theme Primer": {
+                templates: {
+                    "Growing Grassroots Branded Consumption": `You are an analyst at fund XYZ who invests according to main themes, one of those themes is Growing grassroots branded consumption. Growing grassroots branded consumption is low-income communities that are experiencing rising purchasing power. Identify meaningful trends related to Growing grassroots branded consumption in both China and India within the last year, provide evidence to support your claims. Additionally, identify which industries within Growing grassroots branded consumption have had positive indicators in investment potential and which have had negative indicators.`,
+                    "Financialisation": `I'm interested in the financialization of China and India. Identify meaningful trends derived from the financialization of their economies with empirical evidence (deep research)`,
+                    "Gateway Assets": `You are an analyst at fund XYZ who invests according to main themes, one of those themes are gateway assets. Gateway assets are assets such as ports or gas pipelines that generally are infrastructure related where the management company can profit from running an asset that majority of the people in a location have to use, almost like a monopoly. Identify meaningful trends related to gateway assets in both China and India within the last year, provide evidence to support your claims. Additionally, identify which industries within gateway assets have had positive indicators in investment potential and which have had negative indicators. I have given you a list of potential gateway assets here: Airports, Seaports, Railway networks (especially freight), Toll roads and expressways, Bridges and tunnels (e.g., cross-harbor tunnels), Urban transit systems (subways, trams), Electricity transmission and distribution grids, Natural gas pipelines, Water supply systems, Wastewater treatment plants, District heating and cooling systems, Oil terminals and refineries, Fiber-optic backbone networks, Submarine communication cables, Cell towers and base stations, Spectrum licenses, Internet exchange points (IXPs), Landfills, Recycling and sorting facilities, Hazardous waste treatment plants, Incineration plants, Data centers (especially hyperscale), Cloud computing hubs, Server farms, Content delivery networks (CDNs), Hospitals (especially regional monopolies), Major universities and vocational training centers, Correctional facilities, Public housing estates (in some jurisdictions).`,
+                    "Digitalisation": `I'm interested in the digitalization of China and India. Identify meaningful trends derived from the digitalization of their economies with empirical evidence`
+                },
+                fields: ["Theme"]
+            },
+            "DCF Comparison": {
+                template: `You are a financial research expert specializing in company valuations using Discounted Cash Flow (DCF) models. I have built a DCF model for [Company Name] in the [Industry] industry and want you to cross-reference it against [Industry] benchmarks, recent financial data, analyst reports, and market conditions. Analyze my assumptions and outputs, point out any discrepancies or potential improvements, and provide your own estimated fair value for [Company Name] based on a DCF approach. Use up-to-date data where possible (e.g., latest earnings, market multiples, economic factors like interest rates).
+Here are the key figures from my DCF model:
+Revenue Projections: [Revenue Projections]
+Growth Rates: [Growth Rates]
+Operating Margins: [Operating Margins]
+Free Cash Flow Projections: [Free Cash Flow Projections]
+Discount Rate (WACC): [Discount Rate (WACC)]
+Terminal Value Assumptions: [Terminal Value Assumptions]
+Enterprise Value: [Enterprise Value]
+Net Debt/Adjustments: [Net Debt/Adjustments]
+Equity Value and Implied Share Price: [Equity Value and Implied Share Price]
+Sensitivity Analysis: [Sensitivity Analysis]
+Steps to follow in your analysis:
+Review Assumptions: Evaluate if my growth rates, margins, and WACC are reasonable based on the company's historical performance, peer comparisons, and [Industry] trends (e.g., regulatory risks).
+Cross-Reference Data: Look up and cite recent sources for the company's actual financials (e.g., latest quarterly revenue, EBITDA, CapEx), market data (e.g., current share price, EV/EBITDA multiples), and analyst consensus (e.g., average target price from sources like Yahoo Finance or Bloomberg).
+Identify Discrepancies: Highlight any areas where my model might be overly optimistic/pessimistic (e.g., if my growth rate exceeds analyst forecasts) and suggest adjustments with rationale.
+Provide Your Valuation: Build or estimate a DCF-based fair value for the company using your knowledge and research. Include key assumptions you use and the resulting equity value/share price. Compare it directly to mine (e.g., "Your model values the company at [Equity Value and Implied Share Price]; mine estimates [new share price] due to [reason].").
+Recommendations: Suggest improvements to my model, such as alternative scenarios, additional risks (e.g., competition), or sensitivity tests.
+Structure your response with clear sections, use tables for comparisons if helpful, and cite sources for any external data.`,
+                fields: ["Company Name", "Industry", "Revenue Projections", "Growth Rates", "Operating Margins", "Free Cash Flow Projections", "Discount Rate (WACC)", "Terminal Value Assumptions", "Enterprise Value", "Net Debt/Adjustments", "Equity Value and Implied Share Price", "Sensitivity Analysis"]
+            },
+            "Management Discussion": {
+                template: `You are an analyst at a hedge fund, and one of your jobs is the qualitative analysis of corporate communications (company management) for [Company Name] received within both private discussions and public announcements. Your task is to analyze provided management comments extracted from earnings reports, announcements, or transcripts, as well as minutes from meetings with management. Focus on extracting meaningful conviction signals from the tone and content of these comments. Conviction signals refer to indicators of management's confidence, optimism, caution, or uncertainty regarding the company's performance, strategy, risks, and outlook.
+Inputs:
+Earnings reports/announcements: [Earnings reports/announcements]
+Meeting minutes: [Meeting minutes]
+Analysis Guidelines:
+Tone Assessment: Evaluate the overall tone (e.g., optimistic, neutral, cautious, defensive, evasive). Identify linguistic cues such as positive/negative word choices, hedging language (e.g., "we believe," "potentially," "challenges ahead"), emphasis on achievements vs. risks, and changes in tone compared to prior communications if context is provided.
+Content Breakdown: Summarize key themes in the content, including:
+Forward-looking statements on revenue, margins, growth drivers, or challenges.
+Discussions of market conditions, competitive landscape, operational updates, or strategic initiatives.
+Any shifts in guidance, assumptions, or priorities.
+Conviction Signals Extraction: Translate tone and content into conviction signals. For each major theme, assess:
+Strength of conviction: High (strong commitment, data-backed optimism), Medium (balanced but positive), Low (vague, risk-heavy, or downplaying issues).
+Potential biases: Overconfidence, underpromising, or alignment with past performance.
+Implications:
+Short-term Stock Impact: Infer how these signals might influence investor sentiment and stock price in the near term (e.g., 1-3 months). Consider factors like surprise elements, alignment with market expectations, or catalysts for volatility.
+Model Assumptions: Discuss how the comments could affect financial modeling assumptions (e.g., revising revenue growth rates, adjusting risk premiums, updating discount rates, or incorporating new qualitative risks into forecasts). Specify if assumptions should be more conservative/aggressive and why.
+Output Format:
+Structure your response as follows for clarity:
+Summary Overview: A brief executive summary of the overall conviction level.
+Tone Analysis: Detailed breakdown with examples.
+Content Themes and Signals: Bullet points or sections for each key theme, including conviction signals.
+Implications Section:
+Short-term stock outlook.
+Recommended adjustments to model assumptions.
+Limitations: Note any ambiguities in the provided text or need for additional context.
+Base your analysis solely on the provided inputs, using logical reasoning and financial expertise. Avoid speculation beyond what's implied in the text. If the inputs are insufficient, highlight gaps and suggest follow-up questions.`,
+                fields: ["Company Name", "Earnings reports/announcements", "Meeting minutes"]
+            },
+            "Conviction Rating": {
+                template: `I'm looking at the [Industry] industry in China. Please analyze this industry based on the following prompt and also allocate it a nominal GDP benchmark based on the parameters provided: Presence of secular, long-term industry growth drivers and tailwinds? Is this a GDP+ / GDP- industry? Is industry growth aligned with ethical and sustainable community outcomes? What is the penetration rate? Is it underdeveloped / developed? Urbanization trends?
+Nominal GDP Benchmark - If Industry is Growing:
+- Below Nominal GDP, with a low probability of achieving Nominal GDP = L
+- Below Nominal GDP, with directionally +ve to achieving Nominal GDP+ = L-M
+- At Nominal GDP = M, but with directionally -ve = L-M
+- Secular Nominal GDP+ = M-H
+- Secular Nominal GDP+ 2x+ = H
+
+Additionally, for [Company Name], a publicly listed company in China involved in the [Industry] industry, analyze the following traits/characteristics to assess its position relative to competitors:
+- Clearly Identifiable and Defendable Competitive Advantage
+- Competitive Advantage(s): Scale / Brand / Service, etc.
+- Position in Value Chain
+- Market Share
+- Current Position in Industry (Strong / Defendable / Increasing / Decreasing)
+- Relative to Segment Growth
+- Pricing Power with Customers
+- Value of Brand / Goodwill
+- Engagement with Consumers
+- Reputation / Image with Consumers / Suppliers
+Ensure the analysis focuses on [Company Name]’s significant activities in the [Industry] industry and provides a comparative assessment within the industry.`,
+                fields: ["Industry", "Company Name"]
+            }
+        };
+
+        const buttonsContainer = document.getElementById("prompt-buttons");
+        Object.keys(PROMPT_TEMPLATES).forEach(key => {
+            const button = document.createElement("button");
+            button.textContent = key;
+            button.className = "custom-blue-bg text-white px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors duration-200 shadow-md";
+            buttonsContainer.appendChild(button);
+            button.onclick = () => openModal(key);
+        });
+
+        function openModal(promptKey) {
+            const modal = document.getElementById("input-modal");
+            const modalTitle = document.getElementById("modal-title");
+            const form = document.getElementById("input-form");
+            form.innerHTML = "";
+
+            modalTitle.textContent = `Enter details for ${promptKey}`;
+            const fields = PROMPT_TEMPLATES[promptKey].fields;
+
+            fields.forEach(field => {
+                const div = document.createElement("div");
+                if (promptKey === "Theme Primer" && field === "Theme") {
+                    div.innerHTML = `
+                        <label class="block custom-red font-medium">${field}:</label>
+                        <select name="${field}" class="w-full p-3 border border-blue-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <option value="" disabled selected>Select a theme</option>
+                            <option value="Growing Grassroots Branded Consumption">Growing Grassroots Branded Consumption</option>
+                            <option value="Financialisation">Financialisation</option>
+                            <option value="Gateway Assets">Gateway Assets</option>
+                            <option value="Digitalisation">Digitalisation</option>
+                        </select>
+                    `;
+                } else {
+                    const placeholders = {
+                        "Company Name": "eg. Siasun Robot & Automation",
+                        "Industry": "eg. Robotics Manufacturing",
+                        "Country": "eg. India",
+                        "Revenue Projections": "eg. Year 1: $45B, Year 2: $52B, ..., Year 10: $120B, CAGR 12%",
+                        "Growth Rates": "eg. Short-term (years 1-5): 15%, Long-term (years 6-10): 8%, Perpetual: 3%",
+                        "Operating Margins": "eg. EBITDA margin 12% in year 1, ramping to 25% by year 5",
+                        "Free Cash Flow Projections": "eg. Year 1: $2B, Year 2: $3.5B, ..., Year 10: $15B",
+                        "Discount Rate (WACC)": "eg. 7.5%, based on cost of equity 8.5%, cost of debt 4%, beta 1.2",
+                        "Terminal Value Assumptions": "eg. Perpetuity growth at 3% on year 10 FCF, terminal value $200B",
+                        "Enterprise Value": "eg. $150B",
+                        "Net Debt/Adjustments": "eg. Net debt $5B, cash adjustments +$10B",
+                        "Equity Value and Implied Share Price": "eg. Equity value $145B, share price $70 (2.07B shares)",
+                        "Sensitivity Analysis": "eg. Valuation ranges $60-$80 per share with ±1% WACC change",
+                        "Earnings reports/announcements": "eg. CEO: 'We expect 10% revenue growth in 2026 driven by iPhone sales.'",
+                        "Meeting minutes": "eg. CFO: 'Our supply chain is robust, but we’re monitoring tariff risks.'"
+                    };
+                    div.innerHTML = `
+                        <label class="block custom-red font-medium">${field}:</label>
+                        <input type="text" name="${field}" class="w-full p-3 border border-blue-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="${placeholders[field] || ''}" required>
+                    `;
+                }
+                form.appendChild(div);
+            });
+
+            const buttonDiv = document.createElement("div");
+            buttonDiv.className = "flex justify-end space-x-3";
+            buttonDiv.innerHTML = `
+                <button type="button" onclick="closeModal()" class="custom-blue-bg text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">Cancel</button>
+                <button type="submit" class="custom-blue-bg text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">${promptKey === "Company Primer" ? "Submit" : "Generate"}</button>
+            `;
+            form.appendChild(buttonDiv);
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                generatePrompt(promptKey, form);
+            };
+
+            modal.classList.add("opacity-0");
+            modal.style.display = "flex";
+            setTimeout(() => modal.classList.remove("opacity-0"), 50);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("input-modal");
+            modal.classList.add("opacity-0");
+            setTimeout(() => {
+                modal.style.display = "none";
+                const form = document.getElementById("input-form");
+                form.reset();
+            }, 300);
+        }
+
+        function generatePrompt(promptKey, form) {
+            try {
+                let template = promptKey === "Theme Primer" 
+                    ? PROMPT_TEMPLATES[promptKey].templates[form.querySelector(`select[name="Theme"]`).value]
+                    : PROMPT_TEMPLATES[promptKey].template;
+                
+                if (!template) {
+                    throw new Error(`No template found for ${promptKey}`);
+                }
+
+                const inputs = {};
+                PROMPT_TEMPLATES[promptKey].fields.forEach(field => {
+                    const input = form.querySelector(field === "Theme" ? `select[name="${field}"]` : `input[name="${field}"]`);
+                    if (!input || !input.value) {
+                        alert(`Please enter a ${field}.`);
+                        throw new Error(`Missing input for ${field}`);
+                    }
+                    inputs[field] = input.value;
+                });
+
+                // Replace all placeholders case-insensitively
+                let finalTemplate = template;
+                Object.keys(inputs).forEach(field => {
+                    const regex = new RegExp(`\\[${field}\\]`, 'gi'); // 'gi' for global, case-insensitive
+                    finalTemplate = finalTemplate.replace(regex, inputs[field]);
+                });
+
+                const result = document.getElementById("result");
+                result.value = finalTemplate;
+
+                if (promptKey === "Company Primer") {
+                    navigator.clipboard.writeText(finalTemplate).then(() => {
+                        alert("Prompt generated and copied to clipboard!");
+                    }).catch(err => {
+                        console.error("Failed to copy: ", err);
+                        alert("Prompt generated but failed to copy to clipboard. Please use the Copy to Clipboard button.");
+                    });
+                } else {
+                    alert("Prompt generated!");
+                }
+
+                closeModal();
+            } catch (err) {
+                console.error("Error in generatePrompt:", err);
+                alert("An error occurred while generating the prompt. Please try again.");
+            }
+        }
+
+        function copyToClipboard() {
+            const result = document.getElementById("result");
+            navigator.clipboard.writeText(result.value).then(() => {
+                alert("Prompt copied to clipboard!");
+            }).catch(err => {
+                console.error("Failed to copy: ", err);
+                alert("Failed to copy to clipboard. Please select and copy manually.");
+            });
+        }
+
+        window.onload = () => {
+            const styleLink = document.getElementById("style-link");
+            if (styleLink && styleLink.href) {
+                console.log("styles.css linked successfully:", styleLink.href);
+            } else {
+                console.error("styles.css link failed or not found");
+            }
+            const body = document.querySelector("body");
+            const computedStyle = window.getComputedStyle(body);
+            console.log("Body background color:", computedStyle.backgroundColor);
+            const buttons = document.querySelectorAll("#prompt-buttons button");
+            buttons.forEach(btn => {
+                const btnStyle = window.getComputedStyle(btn);
+                console.log(`Button ${btn.textContent} background color:`, btnStyle.backgroundColor);
+            });
+            if (computedStyle.backgroundColor !== "rgb(255, 255, 255)") {
+                console.warn("Body background color is not white, Tailwind may not be applied");
+            }
+            if (buttons.length > 0 && btnStyle.backgroundColor !== "rgb(0, 129, 198)") {
+                console.warn("Button background color is not #0081C6, Tailwind may not be applied");
+            }
+        };
+    </script>
+</body>
+</html>
